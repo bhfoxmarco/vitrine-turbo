@@ -710,6 +710,24 @@
     </div>
 
     <div class="erro-msg" id="erroMsg"></div>
+
+    <!-- Area que aparece apos gerar com sucesso -->
+    <div id="areaLink" style="display:none;margin-top:24px;">
+      <div style="border:1px solid rgba(201,168,76,0.3);background:rgba(201,168,76,0.06);padding:20px;margin-bottom:12px;">
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">Link para o cliente</div>
+        <div id="textoLinkGerado" style="font-size:12px;color:rgba(245,240,232,0.6);word-break:break-all;line-height:1.6;"></div>
+      </div>
+      <button onclick="copiarLinkCliente()" style="width:100%;background:var(--gold);color:var(--dark);border:none;padding:16px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;">
+        Copiar link para o cliente
+      </button>
+      <div id="labelCopiado" style="display:none;margin-top:14px;text-align:center;font-size:14px;font-weight:500;color:var(--gold);letter-spacing:0.05em;padding:12px;border:1px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.08);">
+        Link do cliente copiado!
+      </div>
+      <button onclick="abrirVitrine()" style="width:100%;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.1);padding:14px;font-family:'Outfit',sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;margin-top:10px;">
+        Ver apresentacao
+      </button>
+    </div>
+
   </div>
 </div>
 
@@ -858,7 +876,12 @@ async function gerarVitrine() {
 
     if (!dadosVitrine.length) throw new Error('Nenhum imóvel encontrado');
 
-    renderizarVitrine();
+    // Gera o link do cliente e mostra na tela inicial
+    const base = window.location.origin + window.location.pathname;
+    const linkCliente = base + '?v=' + encodeURIComponent(linkAtual);
+    document.getElementById('textoLinkGerado').textContent = linkCliente;
+    document.getElementById('areaLink').style.display = 'block';
+    document.getElementById('labelCopiado').style.display = 'none';
 
   } catch(e) {
     mostrarErro('Não foi possível carregar a vitrine. Verifique o link e tente novamente.');
@@ -1068,13 +1091,34 @@ function mostrarErro(msg) {
 // ── Copia o link da vitrine turbinada para o cliente ──────────────────────
 // O link inclui o parâmetro ?v= com o link original para carregar direto
 function copiarLinkCliente() {
-  const base  = window.location.origin + window.location.pathname;
-  const link  = base + "?v=" + encodeURIComponent(linkAtual);
+  // Pega o link já gerado que está visível na tela
+  const link = document.getElementById('textoLinkGerado').textContent;
+  if (!link) return;
+
+  // Copia para área de transferência
   navigator.clipboard.writeText(link).then(() => {
-    const toast = document.getElementById("toastLink");
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 3000);
+    // Mostra o label de confirmação
+    const label = document.getElementById('labelCopiado');
+    label.style.display = 'block';
+    // Esconde após 4 segundos
+    setTimeout(() => { label.style.display = 'none'; }, 4000);
+  }).catch(() => {
+    // Fallback caso clipboard não funcione (ex: HTTP sem HTTPS)
+    const el = document.createElement('textarea');
+    el.value = link;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    const label = document.getElementById('labelCopiado');
+    label.style.display = 'block';
+    setTimeout(() => { label.style.display = 'none'; }, 4000);
   });
+}
+
+// Abre a vitrine em tela cheia
+function abrirVitrine() {
+  renderizarVitrine();
 }
 
   const el = document.getElementById('erroMsg');

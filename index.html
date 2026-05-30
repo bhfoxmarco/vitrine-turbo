@@ -697,6 +697,29 @@ function extrairId(link) {
   const imovel = link.match(/\/imovel\/v2\/(\d+)/);
   if (imovel) return { tipo: 'imovel', id: imovel[1] };
 
+  // Link encurtado quin.to — precisa resolver o redirect primeiro
+  if (link.includes('quin.to')) return { tipo: 'encurtado', id: link.trim() };
+
+  return null;
+}
+
+// ── Resolve link encurtado quin.to via proxy ───────────────────────────────
+// O proxy busca o link encurtado e retorna a URL final de redirecionamento
+async function resolverEncurtado(linkCurto) {
+  const proxy = 'https://api.allorigins.win/get?url=';
+  const resp  = await fetch(proxy + encodeURIComponent(linkCurto));
+  const dados = await resp.json();
+
+  // A URL final fica em dados.status.url após o redirecionamento
+  const urlFinal = dados?.status?.url || '';
+
+  // Tenta extrair o ID da URL final
+  const uuid   = urlFinal.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  if (uuid) return { tipo: 'vitrine', id: uuid[1] };
+
+  const imovel = urlFinal.match(/\/imovel\/v2\/(\d+)/);
+  if (imovel) return { tipo: 'imovel', id: imovel[1] };
+
   return null;
 }
 
@@ -733,17 +756,25 @@ async function gerarVitrine() {
   const link = document.getElementById('inputLink').value.trim();
   if (!link) return;
 
-  const extraido = extrairId(link);
+  let extraido = extrairId(link);
   if (!extraido) {
     mostrarErro('Link inválido. Use um link da vitrine QuintoAndar.');
     return;
   }
 
-  document.getElementById('btnGerar').disabled   = true;
+  document.getElementById('btnGerar').disabled        = true;
   document.getElementById('loadingMsg').style.display = 'block';
   document.getElementById('erroMsg').style.display    = 'none';
 
   try {
+    // Se for link encurtado (quin.to), resolve o redirect primeiro
+    if (extraido.tipo === 'encurtado') {
+      document.querySelector('.loading-msg').childNodes[0].textContent = 'Resolvendo link encurtado...';
+      extraido = await resolverEncurtado(extraido.id);
+      if (!extraido) throw new Error('Não foi possível resolver o link encurtado.');
+    }
+
+    document.querySelector('.loading-msg').childNodes[0].textContent = 'Buscando dados da vitrine...';
     const dados = await buscarDados(extraido.tipo, extraido.id);
 
     // Normaliza para sempre ter array de listings

@@ -620,6 +620,46 @@
 
     .btn-voltar:hover { border-color: var(--gold); color: var(--gold); }
 
+    /* Botao copiar link para cliente */
+    .btn-copiar-link {
+      position: fixed;
+      top: 20px;
+      left: 130px;
+      z-index: 200;
+      background: var(--gold);
+      border: none;
+      color: var(--dark);
+      padding: 10px 18px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      display: none;
+      gap: 8px;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    .btn-copiar-link:hover { background: var(--gold2); }
+    .toast-link {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: #1a1a1a;
+      border: 1px solid var(--gold);
+      color: var(--gold2);
+      padding: 12px 24px;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      z-index: 300;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast-link.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
     /* Responsivo */
     @media (max-width: 768px) {
       .hero-conteudo { padding: 40px 24px 32px; }
@@ -676,6 +716,8 @@
 <!-- ── VITRINE TURBINADA ── -->
 <div id="tela-vitrine">
   <button class="btn-voltar" id="btnVoltar" onclick="voltarInicio()">← Voltar</button>
+  <button class="btn-copiar-link" id="btnCopiarLink" onclick="copiarLinkCliente()">📋 Copiar link para cliente</button>
+  <div class="toast-link" id="toastLink">✅ Link copiado! Cole no WhatsApp.</div>
   <nav class="nav-imoveis" id="navImoveis"></nav>
   <div id="conteudoVitrine"></div>
 </div>
@@ -686,6 +728,7 @@ let dadosVitrine = null;
 let imovelAtual  = 0;
 let slideAtual   = 0;
 let timerSlide   = null;
+let linkAtual    = "";  // Guarda o link original para gerar o link do cliente
 
 // ── Extrai ID da vitrine do link ───────────────────────────────────────────
 function extrairId(link) {
@@ -780,6 +823,7 @@ function fixUrl(url) {
 // ── Gera a vitrine ─────────────────────────────────────────────────────────
 async function gerarVitrine() {
   const link = document.getElementById('inputLink').value.trim();
+  linkAtual = link; // Salva o link para gerar o link do cliente depois
   if (!link) return;
 
   let extraido = extrairId(link);
@@ -829,6 +873,7 @@ function renderizarVitrine() {
   document.getElementById('tela-inicio').style.display  = 'none';
   document.getElementById('tela-vitrine').style.display = 'block';
   document.getElementById('btnVoltar').style.display    = 'block';
+  document.getElementById('btnCopiarLink').style.display = 'inline-flex';
 
   // Monta navegação se tiver múltiplos imóveis
   const nav = document.getElementById('navImoveis');
@@ -1014,10 +1059,24 @@ function voltarInicio() {
   document.getElementById('tela-vitrine').style.display = 'none';
   document.getElementById('tela-inicio').style.display  = 'flex';
   document.getElementById('btnVoltar').style.display    = 'none';
+  document.getElementById('btnCopiarLink').style.display = 'none';
 }
 
 // ── Mostrar erro ───────────────────────────────────────────────────────────
 function mostrarErro(msg) {
+
+// ── Copia o link da vitrine turbinada para o cliente ──────────────────────
+// O link inclui o parâmetro ?v= com o link original para carregar direto
+function copiarLinkCliente() {
+  const base  = window.location.origin + window.location.pathname;
+  const link  = base + "?v=" + encodeURIComponent(linkAtual);
+  navigator.clipboard.writeText(link).then(() => {
+    const toast = document.getElementById("toastLink");
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 3000);
+  });
+}
+
   const el = document.getElementById('erroMsg');
   el.textContent     = msg;
   el.style.display   = 'block';
@@ -1033,6 +1092,14 @@ document.addEventListener('keydown', (e) => {
 
 // Permite colar link e pressionar Enter
 document.addEventListener('DOMContentLoaded', () => {
+  // Se o cliente abrir o link com ?v= já carrega a vitrine automaticamente
+  const params = new URLSearchParams(window.location.search);
+  const linkParam = params.get('v');
+  if (linkParam) {
+    document.getElementById('inputLink').value = decodeURIComponent(linkParam);
+    linkAtual = decodeURIComponent(linkParam);
+    gerarVitrine();
+  }
   document.getElementById('inputLink').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') gerarVitrine();
   });

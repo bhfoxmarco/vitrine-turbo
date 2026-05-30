@@ -726,8 +726,6 @@ async function resolverEncurtado(linkCurto) {
 // ── Busca dados via API ────────────────────────────────────────────────────
 // API = Application Programming Interface = interface de comunicação entre sistemas
 async function buscarDados(tipo, id) {
-  const proxy = 'https://api.allorigins.win/get?url=';
-
   let url;
   if (tipo === 'vitrine') {
     url = `https://api-mobile-ro.quintoandar.com.br/shopwindows/${id}`;
@@ -735,9 +733,37 @@ async function buscarDados(tipo, id) {
     url = `https://api-mobile-ro.quintoandar.com.br/shopwindows/imovel/${id}`;
   }
 
-  const resp  = await fetch(proxy + encodeURIComponent(url));
-  const dados = await resp.json();
-  return JSON.parse(dados.contents);
+  // Tenta múltiplos proxies CORS em sequência
+  // CORS = Cross-Origin Resource Sharing = regra de segurança do navegador
+  const proxies = [
+    async () => {
+      const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
+      if (!r.ok) throw new Error('falhou');
+      return r.json();
+    },
+    async () => {
+      const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url));
+      if (!r.ok) throw new Error('falhou');
+      const d = await r.json();
+      return JSON.parse(d.contents);
+    },
+    async () => {
+      const r = await fetch('https://thingproxy.freeboard.io/fetch/' + url);
+      if (!r.ok) throw new Error('falhou');
+      return r.json();
+    }
+  ];
+
+  for (const tentativa of proxies) {
+    try {
+      const dados = await tentativa();
+      if (dados && (dados.listings || dados.id)) return dados;
+    } catch(e) {
+      console.warn('Proxy falhou, tentando próximo...', e.message);
+    }
+  }
+
+  throw new Error('Todos os proxies falharam');
 }
 
 // ── Formata valor em reais ─────────────────────────────────────────────────

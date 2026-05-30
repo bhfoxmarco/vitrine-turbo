@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vitrine Turbo · Marco Silva</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold:    #c9a84c;
+      --gold2:   #e8d5a3;
+      --dark:    #0a0a0a;
+      --dark2:   #111111;
+      --dark3:   #1a1a1a;
+      --text:    #f5f0e8;
+      --muted:   #8a8070;
+      --border:  rgba(201,168,76,0.2);
+      --radius:  4px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── TELA INICIAL (gerador) ── */
+    #tela-inicio {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #tela-inicio::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 50%, rgba(201,168,76,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 85% 20%, rgba(201,168,76,0.04) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .inicio-inner {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-linha {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 48px;
+    }
+
+    .logo-icone {
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .logo-texto {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      color: var(--gold2);
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(38px, 8vw, 58px);
+      font-weight: 300;
+      line-height: 1.05;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .subtitulo {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 48px;
+      letter-spacing: 0.02em;
+    }
+
+    .campo-grupo {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .campo-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-bottom: 1px solid rgba(201,168,76,0.4);
+      padding: 16px 20px;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      outline: none;
+      transition: border-color 0.3s, background 0.3s;
+      letter-spacing: 0.02em;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.04);
+    }
+
+    input[type="text"]::placeholder { color: var(--muted); }
+
+    .btn-gerar {
+      width: 100%;
+      background: var(--gold);
+      color: var(--dark);
+      border: none;
+      padding: 18px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      margin-top: 8px;
+    }
+
+    .btn-gerar:hover { background: var(--gold2); }
+    .btn-gerar:active { transform: scale(0.99); }
+    .btn-gerar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .erro-msg {
+      display: none;
+      margin-top: 16px;
+      padding: 14px 18px;
+      border: 1px solid rgba(220,80,80,0.3);
+      background: rgba(220,80,80,0.06);
+      color: #e07070;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .loading-msg {
+      display: none;
+      margin-top: 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.05em;
+    }
+
+    .loading-bar {
+      height: 1px;
+      background: var(--border);
+      margin-top: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loading-bar::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -40%;
+      width: 40%;
+      height: 100%;
+      background: var(--gold);
+      animation: slide 1s linear infinite;
+    }
+
+    @keyframes slide {
+      to { left: 140%; }
+    }
+
+    /* ── VITRINE TURBINADA ── */
+    #tela-vitrine {
+      display: none;
+      min-height: 100vh;
+    }
+
+    /* Hero com slideshow */
+    .hero {
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    .slide.ativo { opacity: 1; }
+
+    .slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.05);
+      transition: transform 8s ease;
+    }
+
+    .slide.ativo img { transform: scale(1); }
+
+    .slide-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.2) 0%,
+        rgba(0,0,0,0.1) 40%,
+        rgba(0,0,0,0.7) 100%
+      );
+    }
+
+    .hero-conteudo {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 60px 48px 48px;
+      z-index: 2;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      border: 1px solid var(--gold);
+      padding: 5px 14px;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .hero-tipo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 300;
+      line-height: 1;
+      margin-bottom: 12px;
+      color: white;
+    }
+
+    .hero-endereco {
+      font-size: 15px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 0.05em;
+      margin-bottom: 24px;
+    }
+
+    .hero-preco {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 400;
+      color: var(--gold2);
+    }
+
+    /* Indicadores do slideshow */
+    .slide-indicadores {
+      position: absolute;
+      bottom: 28px;
+      right: 48px;
+      display: flex;
+      gap: 6px;
+      z-index: 3;
+    }
+
+    .indicador {
+      width: 24px;
+      height: 2px;
+      background: rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: background 0.3s, width 0.3s;
+    }
+
+    .indicador.ativo {
+      background: var(--gold);
+      width: 48px;
+    }
+
+    /* Contador de fotos */
+    .foto-contador {
+      position: absolute;
+      top: 28px;
+      right: 48px;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.6);
+      z-index: 3;
+    }
+
+    /* Legenda da foto */
+    .foto-legenda {
+      position: absolute;
+      top: 28px;
+      left: 48px;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      z-index: 3;
+    }
+
+    /* Controles do slideshow */
+    .slide-controle {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(0,0,0,0.3);
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+      transition: border-color 0.2s, background 0.2s;
+      backdrop-filter: blur(4px);
+    }
+
+    .slide-controle:hover {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.2);
+    }
+
+    .slide-controle.prev { left: 24px; }
+    .slide-controle.next { right: 24px; }
+
+    /* Seção de detalhes */
+    .secao-detalhes {
+      background: var(--dark2);
+      padding: 80px 48px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .detalhes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .secao-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 24px;
+    }
+
+    .atributos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .atributo {
+      background: var(--dark2);
+      padding: 20px;
+    }
+
+    .atributo-valor {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .atributo-nome {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .descricao-texto {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.9;
+      color: rgba(245,240,232,0.7);
+    }
+
+    /* Valores financeiros */
+    .valores-box {
+      border: 1px solid var(--border);
+      padding: 32px;
+    }
+
+    .valor-principal {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px;
+      font-weight: 300;
+      color: var(--gold2);
+      margin-bottom: 24px;
+      line-height: 1;
+    }
+
+    .valor-linha {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 13px;
+    }
+
+    .valor-linha:last-child { border-bottom: none; }
+    .valor-linha-nome { color: var(--muted); }
+    .valor-linha-val { color: var(--text); font-weight: 500; }
+
+    /* Galeria de thumbnails */
+    .secao-galeria {
+      background: var(--dark);
+      padding: 60px 48px;
+    }
+
+    .galeria-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 4px;
+      margin-top: 32px;
+    }
+
+    .thumb {
+      aspect-ratio: 4/3;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease, filter 0.3s;
+      filter: brightness(0.85);
+    }
+
+    .thumb:hover img {
+      transform: scale(1.06);
+      filter: brightness(1);
+    }
+
+    .thumb-legenda {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 8px 10px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.7));
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .thumb:hover .thumb-legenda { opacity: 1; }
+
+    /* Corretor */
+    .secao-corretor {
+      background: var(--dark3);
+      padding: 60px 48px;
+      border-top: 1px solid var(--border);
+    }
+
+    .corretor-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .corretor-avatar {
+      width: 72px;
+      height: 72px;
+      border: 1px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .corretor-nome {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+
+    .corretor-info {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    .btn-agendar {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      padding: 14px 32px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-agendar:hover {
+      background: var(--gold);
+      color: var(--dark);
+    }
+
+    /* Navegação entre imóveis (vitrine múltipla) */
+    .nav-imoveis {
+      background: var(--dark);
+      border-bottom: 1px solid var(--border);
+      padding: 0 48px;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-item {
+      padding: 20px 24px;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .nav-item.ativo {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    /* Botão voltar */
+    .btn-voltar {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 200;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 18px;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: border-color 0.2s;
+      display: none;
+    }
+
+    .btn-voltar:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* Responsivo */
+    @media (max-width: 768px) {
+      .hero-conteudo { padding: 40px 24px 32px; }
+      .slide-indicadores { right: 24px; }
+      .foto-contador { right: 24px; top: 20px; }
+      .foto-legenda { left: 24px; top: 20px; display: none; }
+      .slide-controle { display: none; }
+      .secao-detalhes { padding: 48px 24px; }
+      .detalhes-grid { grid-template-columns: 1fr; gap: 40px; }
+      .secao-galeria { padding: 40px 24px; }
+      .galeria-grid { grid-template-columns: repeat(3, 1fr); }
+      .secao-corretor { padding: 40px 24px; }
+      .corretor-inner { flex-wrap: wrap; }
+      .btn-agendar { margin-left: 0; }
+      .nav-imoveis { padding: 0 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── TELA INICIAL ── -->
+<div id="tela-inicio">
+  <div class="inicio-inner">
+    <div class="logo-linha">
+      <div class="logo-icone">🏛</div>
+      <div class="logo-texto">Vitrine Turbo</div>
+    </div>
+
+    <h1>Sua vitrine,<br><em>reimaginada.</em></h1>
+    <p class="subtitulo">Cole o link da vitrine QuintoAndar e gere uma apresentação<br>premium para impressionar seus clientes.</p>
+
+    <div class="campo-grupo">
+      <label class="campo-label">Link da vitrine QuintoAndar</label>
+      <input
+        type="text"
+        id="inputLink"
+        placeholder="https://vitrine.quintoandar.com.br/... ou http://quin.to/..."
+      />
+    </div>
+
+    <button class="btn-gerar" id="btnGerar" onclick="gerarVitrine()">
+      Gerar Apresentação
+    </button>
+
+    <div class="loading-msg" id="loadingMsg">
+      Buscando dados da vitrine...
+      <div class="loading-bar"></div>
+    </div>
+
+    <div class="erro-msg" id="erroMsg"></div>
+  </div>
+</div>
+
+<!-- ── VITRINE TURBINADA ── -->
+<div id="tela-vitrine">
+  <button class="btn-voltar" id="btnVoltar" onclick="voltarInicio()">← Voltar</button>
+  <nav class="nav-imoveis" id="navImoveis"></nav>
+  <div id="conteudoVitrine"></div>
+</div>
+
+<script>
+// ── Estado global ──────────────────────────────────────────────────────────
+let dadosVitrine = null;
+let imovelAtual  = 0;
+let slideAtual   = 0;
+let timerSlide   = null;
+
+// ── Extrai ID da vitrine do link ───────────────────────────────────────────
+function extrairId(link) {
+  // Formato múltiplo: /042348a0-c44a-4c7c-9c62-.../
+  const uuid = link.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  if (uuid) return { tipo: 'vitrine', id: uuid[1] };
+
+  // Formato único: /imovel/v2/895276122/
+  const imovel = link.match(/\/imovel\/v2\/(\d+)/);
+  if (imovel) return { tipo: 'imovel', id: imovel[1] };
+
+  return null;
+}
+
+// ── Busca dados via API ────────────────────────────────────────────────────
+// API = Application Programming Interface = interface de comunicação entre sistemas
+async function buscarDados(tipo, id) {
+  const proxy = 'https://api.allorigins.win/get?url=';
+
+  let url;
+  if (tipo === 'vitrine') {
+    url = `https://api-mobile-ro.quintoandar.com.br/shopwindows/${id}`;
+  } else {
+    url = `https://api-mobile-ro.quintoandar.com.br/shopwindows/imovel/${id}`;
+  }
+
+  const resp  = await fetch(proxy + encodeURIComponent(url));
+  const dados = await resp.json();
+  return JSON.parse(dados.contents);
+}
+
+// ── Formata valor em reais ─────────────────────────────────────────────────
+function formatarValor(v) {
+  return 'R$ ' + Number(v).toLocaleString('pt-BR');
+}
+
+// ── Corrige URL das imagens ────────────────────────────────────────────────
+function fixUrl(url) {
+  if (!url) return '';
+  return url.startsWith('//') ? 'https:' + url : url;
+}
+
+// ── Gera a vitrine ─────────────────────────────────────────────────────────
+async function gerarVitrine() {
+  const link = document.getElementById('inputLink').value.trim();
+  if (!link) return;
+
+  const extraido = extrairId(link);
+  if (!extraido) {
+    mostrarErro('Link inválido. Use um link da vitrine QuintoAndar.');
+    return;
+  }
+
+  document.getElementById('btnGerar').disabled   = true;
+  document.getElementById('loadingMsg').style.display = 'block';
+  document.getElementById('erroMsg').style.display    = 'none';
+
+  try {
+    const dados = await buscarDados(extraido.tipo, extraido.id);
+
+    // Normaliza para sempre ter array de listings
+    if (dados.listings) {
+      dadosVitrine = dados.listings;
+    } else if (dados.id) {
+      dadosVitrine = [dados];
+    } else {
+      throw new Error('Formato inesperado');
+    }
+
+    if (!dadosVitrine.length) throw new Error('Nenhum imóvel encontrado');
+
+    renderizarVitrine();
+
+  } catch(e) {
+    mostrarErro('Não foi possível carregar a vitrine. Verifique o link e tente novamente.');
+  } finally {
+    document.getElementById('btnGerar').disabled   = false;
+    document.getElementById('loadingMsg').style.display = 'none';
+  }
+}
+
+// ── Renderiza a vitrine completa ───────────────────────────────────────────
+function renderizarVitrine() {
+  document.getElementById('tela-inicio').style.display  = 'none';
+  document.getElementById('tela-vitrine').style.display = 'block';
+  document.getElementById('btnVoltar').style.display    = 'block';
+
+  // Monta navegação se tiver múltiplos imóveis
+  const nav = document.getElementById('navImoveis');
+  if (dadosVitrine.length > 1) {
+    nav.innerHTML = dadosVitrine.map((im, i) => `
+      <div class="nav-item ${i === 0 ? 'ativo' : ''}" onclick="trocarImovel(${i})">
+        ${im.type} ${i + 1} · ${im.address?.neighborhood || ''}
+      </div>
+    `).join('');
+  } else {
+    nav.style.display = 'none';
+  }
+
+  imovelAtual = 0;
+  renderizarImovel(0);
+}
+
+// ── Troca imóvel na navegação ──────────────────────────────────────────────
+function trocarImovel(idx) {
+  imovelAtual = idx;
+  document.querySelectorAll('.nav-item').forEach((el, i) => {
+    el.classList.toggle('ativo', i === idx);
+  });
+  renderizarImovel(idx);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Renderiza um imóvel ────────────────────────────────────────────────────
+function renderizarImovel(idx) {
+  const im      = dadosVitrine[idx];
+  const fotos   = im.images || [];
+  const end     = im.address || {};
+  const negocio = im.businessContext === 'SALE' ? 'Venda' : 'Aluguel';
+
+  slideAtual = 0;
+  if (timerSlide) clearInterval(timerSlide);
+
+  // Monta slides com as primeiras 20 fotos
+  const fotosHero = fotos.slice(0, 20);
+  const slidesHTML = fotosHero.map((f, i) => `
+    <div class="slide ${i === 0 ? 'ativo' : ''}" id="slide-${i}">
+      <img src="${fixUrl(f.url)}" alt="${f.subtitle || 'Foto do imóvel'}" loading="${i < 3 ? 'eager' : 'lazy'}">
+      <div class="slide-overlay"></div>
+    </div>
+  `).join('');
+
+  const indicadoresHTML = fotosHero.slice(0, 10).map((_, i) => `
+    <div class="indicador ${i === 0 ? 'ativo' : ''}" onclick="irParaSlide(${i})"></div>
+  `).join('');
+
+  // Atributos do imóvel
+  const attrs = [
+    { val: im.bedrooms || '—',      nome: 'Quartos' },
+    { val: im.totalArea ? im.totalArea + 'm²' : '—', nome: 'Área total' },
+    { val: im.parkingSlots || '—',  nome: 'Vagas' },
+    { val: im.bathrooms || '—',     nome: 'Banheiros' },
+  ].filter(a => a.val !== '—');
+
+  const atributosHTML = attrs.map(a => `
+    <div class="atributo">
+      <div class="atributo-valor">${a.val}</div>
+      <div class="atributo-nome">${a.nome}</div>
+    </div>
+  `).join('');
+
+  // Galeria de thumbs
+  const galeriaHTML = fotos.map((f, i) => `
+    <div class="thumb" onclick="irParaSlide(${Math.min(i, fotosHero.length - 1)}); window.scrollTo({top:0,behavior:'smooth'})">
+      <img src="${fixUrl(f.url)}" alt="${f.subtitle || ''}" loading="lazy">
+      ${f.subtitle ? `<div class="thumb-legenda">${f.subtitle}</div>` : ''}
+    </div>
+  `).join('');
+
+  // Valores financeiros
+  const valoresHTML = [
+    im.condominiumValue > 0 ? `<div class="valor-linha"><span class="valor-linha-nome">Condomínio</span><span class="valor-linha-val">${formatarValor(im.condominiumValue)}/mês</span></div>` : '',
+    im.iptuValue > 0 ? `<div class="valor-linha"><span class="valor-linha-nome">IPTU</span><span class="valor-linha-val">${formatarValor(im.iptuValue)}/mês</span></div>` : '',
+  ].filter(Boolean).join('');
+
+  const linkOriginal = `https://www.quintoandar.com.br/imovel/${im.id}/comprar`;
+
+  document.getElementById('conteudoVitrine').innerHTML = `
+    <!-- Hero Slideshow -->
+    <div class="hero">
+      ${slidesHTML}
+      <div class="foto-legenda" id="fotoLegenda">${fotos[0]?.subtitle || ''}</div>
+      <div class="foto-contador" id="fotoContador">1 / ${fotosHero.length}</div>
+
+      <button class="slide-controle prev" onclick="moverSlide(-1)">‹</button>
+      <button class="slide-controle next" onclick="moverSlide(1)">›</button>
+
+      <div class="hero-conteudo">
+        <div class="hero-badge">${negocio} · ${end.neighborhood || ''}, ${end.city || ''}</div>
+        <div class="hero-tipo">${im.type || 'Imóvel'}</div>
+        <div class="hero-endereco">${end.address || ''}, ${end.number || ''} · ${end.neighborhood || ''} · ${end.zipCode || ''}</div>
+        <div class="hero-preco">${im.salePrice ? formatarValor(im.salePrice) : im.rentalTotalCost ? formatarValor(im.rentalTotalCost) + '/mês' : ''}</div>
+      </div>
+
+      <div class="slide-indicadores">${indicadoresHTML}</div>
+    </div>
+
+    <!-- Detalhes -->
+    <div class="secao-detalhes">
+      <div class="detalhes-grid">
+        <div>
+          <div class="secao-label">Características</div>
+          <div class="atributos">${atributosHTML}</div>
+        </div>
+        <div>
+          <div class="secao-label">Investimento</div>
+          <div class="valores-box">
+            <div class="valor-principal">${im.salePrice ? formatarValor(im.salePrice) : formatarValor(im.rentalTotalCost) + '/mês'}</div>
+            ${valoresHTML}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Galeria -->
+    <div class="secao-galeria">
+      <div class="secao-label">${fotos.length} Fotografias</div>
+      <div class="galeria-grid">${galeriaHTML}</div>
+    </div>
+
+    <!-- Corretor -->
+    <div class="secao-corretor">
+      <div class="corretor-inner">
+        <div class="corretor-avatar">MS</div>
+        <div>
+          <div class="corretor-nome">Marco Antônio da Silva</div>
+          <div class="corretor-info">CRECI 46689 · Corretor Parceiro QuintoAndar</div>
+        </div>
+        <a class="btn-agendar" href="${linkOriginal}" target="_blank">
+          Agendar visita →
+        </a>
+      </div>
+    </div>
+  `;
+
+  // Inicia slideshow automático (troca a cada 5 segundos)
+  timerSlide = setInterval(() => moverSlide(1), 5000);
+}
+
+// ── Controles do slideshow ─────────────────────────────────────────────────
+function moverSlide(dir) {
+  const im      = dadosVitrine[imovelAtual];
+  const total   = Math.min((im.images || []).length, 20);
+  const anterior = slideAtual;
+
+  slideAtual = (slideAtual + dir + total) % total;
+  atualizarSlide(anterior);
+}
+
+function irParaSlide(idx) {
+  const anterior = slideAtual;
+  slideAtual = idx;
+  atualizarSlide(anterior);
+  if (timerSlide) { clearInterval(timerSlide); timerSlide = setInterval(() => moverSlide(1), 5000); }
+}
+
+function atualizarSlide(anterior) {
+  const im    = dadosVitrine[imovelAtual];
+  const fotos = im.images || [];
+
+  document.getElementById(`slide-${anterior}`)?.classList.remove('ativo');
+  document.getElementById(`slide-${slideAtual}`)?.classList.add('ativo');
+
+  // Atualiza contador e legenda
+  const contador = document.getElementById('fotoContador');
+  const legenda  = document.getElementById('fotoLegenda');
+  if (contador) contador.textContent = `${slideAtual + 1} / ${Math.min(fotos.length, 20)}`;
+  if (legenda)  legenda.textContent  = fotos[slideAtual]?.subtitle || '';
+
+  // Atualiza indicadores (máx 10)
+  document.querySelectorAll('.indicador').forEach((el, i) => {
+    el.classList.toggle('ativo', i === slideAtual % 10);
+  });
+}
+
+// ── Voltar para tela inicial ───────────────────────────────────────────────
+function voltarInicio() {
+  if (timerSlide) clearInterval(timerSlide);
+  document.getElementById('tela-vitrine').style.display = 'none';
+  document.getElementById('tela-inicio').style.display  = 'flex';
+  document.getElementById('btnVoltar').style.display    = 'none';
+}
+
+// ── Mostrar erro ───────────────────────────────────────────────────────────
+function mostrarErro(msg) {
+  const el = document.getElementById('erroMsg');
+  el.textContent     = msg;
+  el.style.display   = 'block';
+}
+
+// Suporte a teclado para navegar no slideshow
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('tela-vitrine').style.display === 'none') return;
+  if (e.key === 'ArrowLeft')  moverSlide(-1);
+  if (e.key === 'ArrowRight') moverSlide(1);
+  if (e.key === 'Escape')     voltarInicio();
+});
+
+// Permite colar link e pressionar Enter
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('inputLink').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') gerarVitrine();
+  });
+});
+</script>
+</body>
+</html>
